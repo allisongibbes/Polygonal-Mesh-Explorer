@@ -1,0 +1,170 @@
+<style>
+  .mesh-widget {
+    font-family: Arial, sans-serif;
+    max-width: 850px;
+    margin: 20px auto;
+    padding: 20px;
+    border: 2px solid #333;
+    border-radius: 8px;
+    background-color: #f4f6f8;
+    text-align: center;
+  }
+
+  .stage {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    background-color: #111;
+    border: 2px solid #444;
+    border-radius: 6px;
+    overflow: hidden;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .nav-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+    margin-bottom: 15px;
+  }
+
+  .mesh-btn {
+    padding: 10px 6px;
+    font-size: 0.9rem;
+    font-weight: bold;
+    cursor: pointer;
+    background-color: #fff;
+    border: 2px solid #ccc;
+    border-radius: 6px;
+    transition: all 0.2s;
+  }
+
+  .mesh-btn:hover { background-color: #e3f2fd; }
+  .mesh-btn.active { background-color: #1976d2; color: white; border-color: #1565c0; }
+
+  .description-box {
+    background: #fff;
+    padding: 15px;
+    border-radius: 6px;
+    border: 1px solid #ddd;
+    font-size: 1rem;
+    color: #333;
+    text-align: left;
+    min-height: 75px;
+    line-height: 1.4;
+  }
+</style>
+
+<div class="mesh-widget">
+  <h2>The Polygonal Mesh Explorer (Digital Clay)</h2>
+  <p>Explore the three core structural components of a 3D wireframe mesh and see how it forms digital clay.</p>
+
+  <div class="stage" id="meshStage">
+    <!-- Rendered dynamically via JS -->
+  </div>
+
+  <div class="nav-grid">
+    <button class="mesh-btn active" onclick="setMeshMode('vertices')">1. Vertices (Points)</button>
+    <button class="mesh-btn" onclick="setMeshMode('edges')">2. Edges (Lines)</button>
+    <button class="mesh-btn" onclick="setMeshMode('faces')">3. Faces (Surfaces)</button>
+    <button class="mesh-btn" onclick="setMeshMode('skin')">4. Paper-Mâché Skin</button>
+  </div>
+
+  <div class="description-box" id="meshDesc">
+    <strong>Vertices:</strong> Individual points located at precise X, Y, and Z coordinates in 3D space. They form the foundational anchors of every digital model.
+  </div>
+</div>
+
+<script>
+  const stage = document.getElementById('meshStage');
+  const desc = document.getElementById('meshDesc');
+  const buttons = document.querySelectorAll('.mesh-widget .mesh-btn');
+
+  const meshModes = {
+    vertices: {
+      svg: `<svg width="450" height="250" viewBox="0 0 450 250">
+              <!-- Wireframe edges dimmed -->
+              <g stroke="#444" stroke-width="1.5">
+                <line x1="225" y1="50" x2="150" y2="125"/>
+                <line x1="225" y1="50" x2="300" y2="125"/>
+                <line x1="150" y1="125" x2="225" y2="200"/>
+                <line x1="300" y1="125" x2="225" y2="200"/>
+                <line x1="150" y1="125" x2="225" y2="100"/>
+                <line x1="300" y1="125" x2="225" y2="100"/>
+                <line x1="225" y1="50" x2="225" y2="100"/>
+                <line x1="225" y1="200" x2="225" y2="100"/>
+              </g>
+              <!-- Highlighted Vertices -->
+              <g fill="#ff5722">
+                <circle cx="225" cy="50" r="7"/><text x="235" y="45" fill="#ff5722" font-size="12">Vertex (Top)</text>
+                <circle cx="150" cy="125" r="7"/><text x="80" y="120" fill="#ff5722" font-size="12">Vertex (Left)</text>
+                <circle cx="300" cy="125" r="7"/><text x="315" y="120" fill="#ff5722" font-size="12">Vertex (Right)</text>
+                <circle cx="225" cy="200" r="7"/><text x="235" y="215" fill="#ff5722" font-size="12">Vertex (Bottom)</text>
+                <circle cx="225" cy="100" r="7"/><text x="235" y="95" fill="#ff5722" font-size="12">Vertex (Center)</text>
+              </g>
+            </svg>`,
+      text: "<strong>Vertices:</strong> Individual points in 3D space possessing exact X, Y, and Z coordinates. They serve as the structural anchor points for the entire model."
+    },
+    edges: {
+      svg: `<svg width="450" height="250" viewBox="0 0 450 250">
+              <!-- Highlighted Edges -->
+              <g stroke="#03a9f4" stroke-width="3">
+                <line x1="225" y1="50" x2="150" y2="125"/>
+                <line x1="225" y1="50" x2="300" y2="125"/>
+                <line x1="150" y1="125" x2="225" y2="200"/>
+                <line x1="300" y1="125" x2="225" y2="200"/>
+                <line x1="150" y1="125" x2="225" y2="100"/>
+                <line x1="300" y1="125" x2="225" y2="100"/>
+                <line x1="225" y1="50" x2="225" y2="100"/>
+                <line x1="225" y1="200" x2="225" y2="100"/>
+              </g>
+              <!-- Vertices small -->
+              <g fill="#fff">
+                <circle cx="225" cy="50" r="4"/><circle cx="150" cy="125" r="4"/><circle cx="300" cy="125" r="4"/><circle cx="225" cy="200" r="4"/><circle cx="225" cy="100" r="4"/>
+              </g>
+              <text x="225" y="235" fill="#03a9f4" font-size="12" text-anchor="middle">Edges: The straight lines connecting vertices together</text>
+            </svg>`,
+      text: "<strong>Edges:</strong> The straight line segments connecting pairs of vertices. Together, edges form the visible geometric wireframe skeleton of the 3D shape."
+    },
+    faces: {
+      svg: `<svg width="450" height="250" viewBox="0 0 450 250">
+              <!-- Highlighted Faces (Triangles/Quads) -->
+              <polygon points="225,50 150,125 225,100" fill="#4caf50" opacity="0.7" stroke="#fff" stroke-width="2"/>
+              <polygon points="225,50 300,125 225,100" fill="#8bc34a" opacity="0.7" stroke="#fff" stroke-width="2"/>
+              <polygon points="150,125 225,200 225,100" fill="#2e7d32" opacity="0.7" stroke="#fff" stroke-width="2"/>
+              <polygon points="300,125 225,200 225,100" fill="#689f38" opacity="0.7" stroke="#fff" stroke-width="2"/>
+              <text x="225" y="235" fill="#a5d6a7" font-size="12" text-anchor="middle">Faces: Flat polygons (triangles or quads) enclosed by edges</text>
+            </svg>`,
+      text: "<strong>Faces:</strong> The flat 2D surfaces enclosed by connected edges. Most digital meshes are built from triangles or four-sided polygons (quads) to create solid geometric shapes."
+    },
+    skin: {
+      svg: `<svg width="450" height="250" viewBox="0 0 450 250">
+              <!-- Shaded 3D Octahedron / Paper Mache skin -->
+              <defs>
+                <linearGradient id="skin1" x1="0" y1="0" x2="1" y2="1">
+                  <stop offset="0%" stop-color="#ab47bc"/><stop offset="100%" stop-color="#6a1b9a"/>
+                </linearGradient>
+                <linearGradient id="skin2" x1="1" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="#ce93d8"/><stop offset="100%" stop-color="#8e24aa"/>
+                </linearGradient>
+              </defs>
+              <polygon points="225,50 150,125 225,100" fill="url(#skin1)" stroke="#4a148c" stroke-width="1"/>
+              <polygon points="225,50 300,125 225,100" fill="url(#skin2)" stroke="#4a148c" stroke-width="1"/>
+              <polygon points="150,125 225,200 225,100" fill="url(#skin2)" stroke="#4a148c" stroke-width="1"/>
+              <polygon points="300,125 225,200 225,100" fill="url(#skin1)" stroke="#4a148c" stroke-width="1"/>
+              <text x="225" y="235" fill="#e1bee7" font-size="12" text-anchor="middle">Paper-Mâché Skin: A solid, volumetric shell ready for rigging and texturing</text>
+            </svg>`,
+      text: "<strong>Paper-Mâché Skin Analogy:</strong> Just like a wire sculpture wrapped in paper-mâché, the polygonal mesh provides a hollow, volumetric shell. On its own it is lifeless—it needs an internal rig and shaders to come alive!"
+    }
+  };
+
+  function setMeshMode(mode) {
+    buttons.forEach(b => b.classList.remove('active'));
+    event.currentTarget.classList.add('active');
+    stage.innerHTML = meshModes[mode].svg;
+    desc.innerHTML = meshModes[mode].text;
+  }
+</script>
